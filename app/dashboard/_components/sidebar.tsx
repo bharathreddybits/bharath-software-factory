@@ -1,7 +1,7 @@
 import { OrgSwitcher } from "./org-switcher";
 import { NavLinks } from "./nav-links";
 import factoryConfig from "@/src/config/factory.config";
-import type { UserContext } from "@/src/features/organizations/db/get-context";
+import type { UserContext } from "@/src/features/organizations";
 
 type Props = {
   context: UserContext;

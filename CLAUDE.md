@@ -18,6 +18,12 @@ It enforces auth + org invariants (redirect to /login or /onboarding if violated
 `UserContext` with `{ userId, email, organizationId, organizationName, role }`.
 It is wrapped in `React.cache()` — calling it twice in one render is free.
 
+**Exception — `app/onboarding/actions.ts` is the one Server Action that cannot call `getServerContext()`.**
+`getServerContext()` redirects to `/onboarding` when the user has no org. The onboarding action
+is the bootstrapping step that *creates* the org — calling it there produces a circular redirect.
+`app/onboarding/actions.ts` calls `supabase.auth.getUser()` directly instead. This is the only
+legitimate exception to the rule. Do not copy this pattern elsewhere.
+
 **RLS is the primary security layer. Application checks are defense-in-depth.**
 The Supabase `anon` key respects RLS policies in `supabase/rls_policies.sql`.
 The `SUPABASE_SERVICE_ROLE_KEY` bypasses RLS — use it only in Route Handlers and webhooks,

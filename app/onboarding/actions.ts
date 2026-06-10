@@ -1,5 +1,10 @@
 "use server";
 
+// NOTE: This action intentionally does NOT call getServerContext().
+// getServerContext() redirects to /onboarding when the user has no org.
+// This action IS the step that creates the org — using it here would loop.
+// See CLAUDE.md "Core Invariants" for the documented exception.
+
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { createClient } from "@/src/lib/supabase/server";
