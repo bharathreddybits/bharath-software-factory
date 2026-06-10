@@ -11,47 +11,8 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { createCheckoutAction, cancelSubscriptionAction } from "./actions";
+import factoryConfig from "@/src/config/factory.config";
 import type { Subscription } from "@/src/lib/db/schema";
-
-// ── Plan catalogue ────────────────────────────────────────────────────────────
-
-const PLANS = [
-  {
-    id: "starter",
-    name: "Starter",
-    price: { international: 9, domestic: 749 },
-    description: "Great for indie makers and small projects.",
-    features: ["Up to 3 team members", "10K AI tokens / month", "Email support"],
-    highlighted: false,
-  },
-  {
-    id: "pro",
-    name: "Pro",
-    price: { international: 29, domestic: 2499 },
-    description: "For growing teams that need more power.",
-    features: [
-      "Up to 15 team members",
-      "100K AI tokens / month",
-      "Priority support",
-      "Custom domain",
-    ],
-    highlighted: true,
-  },
-  {
-    id: "enterprise",
-    name: "Enterprise",
-    price: { international: 99, domestic: 8499 },
-    description: "Unlimited scale with dedicated support.",
-    features: [
-      "Unlimited team members",
-      "1M AI tokens / month",
-      "Dedicated support",
-      "SSO + SAML",
-      "Custom SLA",
-    ],
-    highlighted: false,
-  },
-] as const;
 
 // ── Razorpay window type ──────────────────────────────────────────────────────
 
@@ -100,7 +61,7 @@ export function BillingClient({ subscription, orgName }: Props) {
         key: checkoutState.keyId,
         subscription_id: checkoutState.subscriptionId,
         name: checkoutState.name,
-        description: "BSF Subscription",
+        description: `${factoryConfig.product.name} Subscription`,
         prefill: { email: checkoutState.email },
         handler: () => {
           window.location.href = "/dashboard/billing?success=true";
@@ -205,11 +166,11 @@ export function BillingClient({ subscription, orgName }: Props) {
         </div>
       )}
 
-      {/* Plan cards — single form; submit button name/value carries the plan ID */}
+      {/* Plan cards — driven by factoryConfig.plans */}
       <form action={checkoutAction}>
         <input type="hidden" name="region" value={region} />
         <div className="grid gap-4 sm:grid-cols-3">
-          {PLANS.map((plan) => (
+          {factoryConfig.plans.map((plan) => (
             <Card
               key={plan.id}
               className={`flex flex-col bg-zinc-900 border-zinc-800 ${
@@ -229,7 +190,7 @@ export function BillingClient({ subscription, orgName }: Props) {
               <CardContent className="flex-1">
                 <p className="mb-4 text-3xl font-bold text-white">
                   {currency}
-                  {region === "domestic" ? plan.price.domestic : plan.price.international}
+                  {region === "domestic" ? plan.domestic.priceInr : plan.international.priceUsd}
                   <span className="text-base font-normal text-zinc-400">/mo</span>
                 </p>
                 <ul className="space-y-1.5">

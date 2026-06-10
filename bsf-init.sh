@@ -6,9 +6,12 @@
 # standalone product. It will:
 #   1. Prompt for the new product name and GitHub remote URL
 #   2. Wipe the boilerplate git history and create a fresh repository
-#   3. Rename the package in package.json
-#   4. Create a local .env.local starter from .env.example
-#   5. Print deployment instructions
+#   3. Update package.json name
+#   4. Update factory.config.ts: product name, tagline, domain, supportEmail,
+#      SEO titles/descriptions, and legal companyName
+#   5. Wire the GitHub remote and create a scaffold commit
+#   6. Create a local .env.local starter from .env.example
+#   7. Print deployment instructions
 #
 # Usage:
 #   chmod +x bsf-init.sh && ./bsf-init.sh
@@ -41,15 +44,21 @@ if [[ ! -f "package.json" ]]; then
 fi
 
 # ── Prompts ───────────────────────────────────────────────────────────────────
-echo -e "${BOLD}Step 1 of 3 — Product details${RESET}"
+echo -e "${BOLD}Step 1 of 4 — Product details${RESET}"
 echo ""
 read -rp "  New product name (kebab-case, e.g. avatar-genius): " NEW_PRODUCT_NAME
+read -rp "  Domain (e.g. avatargenius.com — no https://): " NEW_DOMAIN
 read -rp "  New GitHub remote URL (e.g. https://github.com/you/repo.git): " NEW_GITHUB_URL
 echo ""
 
 # ── Validate inputs ───────────────────────────────────────────────────────────
 if [[ -z "${NEW_PRODUCT_NAME}" ]]; then
   echo -e "${RED}ERROR: Product name cannot be empty.${RESET}"
+  exit 1
+fi
+
+if [[ -z "${NEW_DOMAIN}" ]]; then
+  echo -e "${RED}ERROR: Domain cannot be empty.${RESET}"
   exit 1
 fi
 
@@ -65,7 +74,7 @@ fi
 
 # ── Confirm before destroying git history ────────────────────────────────────
 echo -e "${YELLOW}⚠  This will permanently delete the current .git history.${RESET}"
-read -rp "  Continue with product '${NEW_PRODUCT_NAME}'? (y/N): " CONFIRM
+read -rp "  Continue with product '${NEW_PRODUCT_NAME}' at ${NEW_DOMAIN}? (y/N): " CONFIRM
 if [[ "${CONFIRM}" != "y" && "${CONFIRM}" != "Y" ]]; then
   echo "Aborted — no changes made."
   exit 0
@@ -73,22 +82,20 @@ fi
 echo ""
 
 # ── Step 2: Reset git history ─────────────────────────────────────────────────
-echo -e "${BOLD}Step 2 of 3 — Resetting git history${RESET}"
+echo -e "${BOLD}Step 2 of 4 — Resetting git history${RESET}"
 
 echo "  → Removing boilerplate .git directory…"
 rm -rf .git
 
 echo "  → Initialising fresh git repository…"
 git init
-# Ensure branch is called 'main' regardless of system defaults
 git symbolic-ref HEAD refs/heads/main
 
-# ── Step 3: Rename package.json ───────────────────────────────────────────────
+# ── Step 3: Configure product ─────────────────────────────────────────────────
 echo ""
-echo -e "${BOLD}Step 3 of 3 — Configuring product${RESET}"
+echo -e "${BOLD}Step 3 of 4 — Configuring product${RESET}"
 
 echo "  → Updating package.json name → '${NEW_PRODUCT_NAME}'…"
-# Use Node.js for cross-platform JSON mutation (avoids sed -i portability issues)
 node -e "
   const fs = require('fs');
   const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
@@ -96,27 +103,58 @@ node -e "
   fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
 " "${NEW_PRODUCT_NAME}"
 
-echo "  → Updating factory.config.ts product name…"
+echo "  → Updating factory.config.ts…"
 node -e "
   const fs = require('fs');
-  const kebab = process.argv[1];
+  const kebab   = process.argv[1];
+  const domain  = process.argv[2];
   const display = kebab.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-  let content = fs.readFileSync('src/config/factory.config.ts', 'utf8');
-  content = content.replace(/name: \"Bharath Software Factory\"/g, 'name: \"' + display + '\"');
-  content = content.replace(/companyName: \"Bharath Software Factory\"/g, 'companyName: \"' + display + '\"');
-  fs.writeFileSync('src/config/factory.config.ts', content);
-  console.log('     Display name: ' + display);
-" "${NEW_PRODUCT_NAME}"
 
-# ── Stage all files and make initial commit ───────────────────────────────────
+  let c = fs.readFileSync('src/config/factory.config.ts', 'utf8');
+
+  // product section
+  c = c.replace(/name: \"Bharath Software Factory\"/g,               'name: \"' + display + '\"');
+  c = c.replace(/tagline: \"Ship SaaS products 10× faster with AI\.\"/,  'tagline: \"Your product tagline goes here.\"');
+  c = c.replace(/description: \"AI-native SaaS framework optimized for LLM context efficiency\.\"/,
+                'description: \"' + display + ' — replace this description.\"');
+  c = c.replace(/domain: \"bharathsoftwarefactory\.com\"/,            'domain: \"' + domain + '\"');
+  c = c.replace(/supportEmail: \"support@bharathsoftwarefactory\.com\"/, 'supportEmail: \"support@' + domain + '\"');
+
+  // legal section
+  c = c.replace(/companyName: \"Bharath Software Factory\"/g,         'companyName: \"' + display + '\"');
+
+  // seo section
+  c = c.replace(/metaTitle: \"Bharath Software Factory — Ship SaaS 10× Faster\"/,
+                'metaTitle: \"' + display + '\"');
+  c = c.replace(/metaDescription:\s*\"AI-native SaaS boilerplate[^\"]*\"/,
+                'metaDescription: \"' + display + ' — replace this meta description.\"');
+  c = c.replace(/title: \"Bharath Software Factory\",\n\s*description: \"Ship SaaS products 10× faster with Claude Code and BSF\.\"/,
+                'title: \"' + display + '\",\n      description: \"' + display + ' — replace this OG description.\"');
+
+  // branding label
+  c = c.replace(/label: \"BSF Blue\"/,   'label: \"Primary\"');
+  c = c.replace(/label: \"BSF Violet\"/, 'label: \"Accent\"');
+
+  fs.writeFileSync('src/config/factory.config.ts', c);
+  console.log('     Display name : ' + display);
+  console.log('     Domain       : ' + domain);
+  console.log('     Support email: support@' + domain);
+" "${NEW_PRODUCT_NAME}" "${NEW_DOMAIN}"
+
+# ── Step 4: Scaffold commit + remote ─────────────────────────────────────────
+echo ""
+echo -e "${BOLD}Step 4 of 4 — Git scaffold${RESET}"
+
 echo "  → Staging all project files…"
 git add .
 
 echo "  → Creating scaffold commit…"
-# Configure a minimal identity if none is set (common in fresh CI environments)
 git -c user.name="${GIT_AUTHOR_NAME:-BSF Init}" \
     -c user.email="${GIT_AUTHOR_EMAIL:-init@bsf.local}" \
-    commit -m "chore: scaffold infrastructure via BSF master template"
+    commit -m "chore: scaffold ${NEW_PRODUCT_NAME} via BSF master template"
+
+echo "  → Wiring GitHub remote…"
+git remote add origin "${NEW_GITHUB_URL}"
 
 # ── Bootstrap .env.local ──────────────────────────────────────────────────────
 echo "  → Bootstrapping .env.local…"
@@ -124,7 +162,15 @@ if [[ -f ".env.local" ]]; then
   echo "     .env.local already exists — skipping (edit it manually)."
 else
   cp .env.example .env.local
-  echo "     Created .env.local from .env.example. Fill in your secrets before running the app."
+  # Pre-fill NEXT_PUBLIC_APP_URL with the provided domain
+  node -e "
+    const fs = require('fs');
+    const domain = process.argv[1];
+    let env = fs.readFileSync('.env.local', 'utf8');
+    env = env.replace('NEXT_PUBLIC_APP_URL=http://localhost:3000', 'NEXT_PUBLIC_APP_URL=https://' + domain);
+    fs.writeFileSync('.env.local', env);
+  " "${NEW_DOMAIN}"
+  echo "     Created .env.local — fill in secrets before deploying."
 fi
 
 # ── Completion banner ─────────────────────────────────────────────────────────
@@ -133,39 +179,34 @@ echo -e "${GREEN}${BOLD}╔═════════════════�
 echo -e "${GREEN}${BOLD}║   ✓  '${NEW_PRODUCT_NAME}' scaffolded successfully!$(printf '%*s' $((37 - ${#NEW_PRODUCT_NAME})) '')║${RESET}"
 echo -e "${GREEN}${BOLD}╠══════════════════════════════════════════════════════════════════════╣${RESET}"
 echo -e "${GREEN}${BOLD}║                                                                      ║${RESET}"
-echo -e "${GREEN}${BOLD}║   Next steps to go live:                                             ║${RESET}"
+echo -e "${GREEN}${BOLD}║   Next steps:                                                        ║${RESET}"
 echo -e "${GREEN}${BOLD}║                                                                      ║${RESET}"
 echo -e "${GREEN}${BOLD}║   1. Push to GitHub                                                  ║${RESET}"
-echo -e "${GREEN}${BOLD}║                                                                      ║${RESET}"
-echo -e "${GREEN}${BOLD}║      git remote add origin <YOUR_GITHUB_URL>                        ║${RESET}"
 echo -e "${GREEN}${BOLD}║      git push -u origin main                                         ║${RESET}"
 echo -e "${GREEN}${BOLD}║                                                                      ║${RESET}"
 echo -e "${GREEN}${BOLD}║   2. Create a new Supabase project                                   ║${RESET}"
 echo -e "${GREEN}${BOLD}║      https://supabase.com/dashboard/new                              ║${RESET}"
-echo -e "${GREEN}${BOLD}║      Run migrations: supabase db push                                ║${RESET}"
+echo -e "${GREEN}${BOLD}║      Run:  supabase db push                                          ║${RESET}"
+echo -e "${GREEN}${BOLD}║      Then: paste rls_policies.sql into the SQL Editor                ║${RESET}"
 echo -e "${GREEN}${BOLD}║                                                                      ║${RESET}"
-echo -e "${GREEN}${BOLD}║   3. Import into Vercel & set env vars                               ║${RESET}"
+echo -e "${GREEN}${BOLD}║   3. Import into Vercel & set env vars from .env.local               ║${RESET}"
 echo -e "${GREEN}${BOLD}║      https://vercel.com/new                                          ║${RESET}"
-echo -e "${GREEN}${BOLD}║      Copy all keys from .env.local → Vercel Dashboard                ║${RESET}"
+echo -e "${GREEN}${BOLD}║      NEXT_PUBLIC_APP_URL is pre-set to https://${NEW_DOMAIN}$(printf '%*s' $((20 - ${#NEW_DOMAIN})) '')║${RESET}"
 echo -e "${GREEN}${BOLD}║                                                                      ║${RESET}"
-echo -e "${GREEN}${BOLD}║   4. Create Sentry project & paste DSN                               ║${RESET}"
+echo -e "${GREEN}${BOLD}║   4. Create plans in DoDo and Razorpay dashboards                    ║${RESET}"
+echo -e "${GREEN}${BOLD}║      Then paste the plan IDs into factory.config.ts → plans[]        ║${RESET}"
+echo -e "${GREEN}${BOLD}║                                                                      ║${RESET}"
+echo -e "${GREEN}${BOLD}║   5. Update factory.config.ts with your product details:             ║${RESET}"
+echo -e "${GREEN}${BOLD}║      - product.tagline / description                                 ║${RESET}"
+echo -e "${GREEN}${BOLD}║      - seo.metaDescription / openGraph.description                   ║${RESET}"
+echo -e "${GREEN}${BOLD}║      - branding.primary / accent colors (oklch values)               ║${RESET}"
+echo -e "${GREEN}${BOLD}║      - Replace public/logo.svg with your actual logo                 ║${RESET}"
+echo -e "${GREEN}${BOLD}║                                                                      ║${RESET}"
+echo -e "${GREEN}${BOLD}║   6. Create Sentry project & paste DSN                               ║${RESET}"
 echo -e "${GREEN}${BOLD}║      https://sentry.io/settings/projects/                            ║${RESET}"
-echo -e "${GREEN}${BOLD}║      Set: NEXT_PUBLIC_SENTRY_DSN + SENTRY_AUTH_TOKEN                 ║${RESET}"
-echo -e "${GREEN}${BOLD}║                                                                      ║${RESET}"
-echo -e "${GREEN}${BOLD}║   5. Register merchant accounts for this product                     ║${RESET}"
-echo -e "${GREEN}${BOLD}║      DoDo Payments (international): https://dodopayments.com         ║${RESET}"
-echo -e "${GREEN}${BOLD}║      Razorpay (India):              https://razorpay.com             ║${RESET}"
-echo -e "${GREEN}${BOLD}║      Update DODO_* and RAZORPAY_* vars in .env.local + Vercel        ║${RESET}"
-echo -e "${GREEN}${BOLD}║                                                                      ║${RESET}"
-echo -e "${GREEN}${BOLD}║   6. Vercel CLI (optional — push env vars in one command)            ║${RESET}"
-echo -e "${GREEN}${BOLD}║      npm i -g vercel                                                 ║${RESET}"
-echo -e "${GREEN}${BOLD}║      vercel env pull .env.local    # pull from Vercel → local        ║${RESET}"
-echo -e "${GREEN}${BOLD}║      vercel --prod                 # deploy to production            ║${RESET}"
 echo -e "${GREEN}${BOLD}║                                                                      ║${RESET}"
 echo -e "${GREEN}${BOLD}╚══════════════════════════════════════════════════════════════════════╝${RESET}"
 echo ""
 echo -e "  Your GitHub remote: ${CYAN}${NEW_GITHUB_URL}${RESET}"
-echo ""
-echo -e "  ${BOLD}git remote add origin ${NEW_GITHUB_URL}${RESET}"
-echo -e "  ${BOLD}git push -u origin main${RESET}"
+echo -e "  Push when ready:    ${BOLD}git push -u origin main${RESET}"
 echo ""

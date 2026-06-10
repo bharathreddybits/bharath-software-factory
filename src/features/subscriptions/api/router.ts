@@ -22,14 +22,6 @@ export type RazorpayCheckoutResult = {
 
 export type CheckoutResult = DodoCheckoutResult | RazorpayCheckoutResult;
 
-// ── Plan amount lookup (Razorpay amounts in paise) ────────────────────────────
-
-const RAZORPAY_AMOUNTS: Record<string, number> = {
-  starter: 74900,
-  pro: 249900,
-  enterprise: 849900,
-};
-
 // ── Internal gateway helpers ──────────────────────────────────────────────────
 
 async function createDodoCheckout(
@@ -40,6 +32,13 @@ async function createDodoCheckout(
   const apiKey = process.env.DODO_PAYMENTS_API_KEY;
   if (!apiKey) throw new Error("DODO_PAYMENTS_API_KEY is not configured in .env.local");
 
+  const plan = factoryConfig.plans.find((p) => p.id === planId);
+  if (!plan) throw new Error(`Unknown plan: "${planId}"`);
+  if (!plan.international.dodoPlanId)
+    throw new Error(
+      `DoDo plan ID not configured for "${planId}". Set factoryConfig.plans[].international.dodoPlanId after creating the plan in DoDo dashboard.`
+    );
+
   const res = await fetch("https://api.dodopayments.com/subscriptions", {
     method: "POST",
     headers: {
@@ -47,7 +46,7 @@ async function createDodoCheckout(
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      product_id: planId,
+      product_id: plan.international.dodoPlanId,
       customer: { email: userEmail },
       payment_link: true,
       metadata: { organization_id: organizationId },
@@ -74,6 +73,13 @@ async function createRazorpayCheckout(
   const keySecret = process.env.RAZORPAY_KEY_SECRET;
   if (!keyId || !keySecret) throw new Error("RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET not configured");
 
+  const plan = factoryConfig.plans.find((p) => p.id === planId);
+  if (!plan) throw new Error(`Unknown plan: "${planId}"`);
+  if (!plan.domestic.razorpayPlanId)
+    throw new Error(
+      `Razorpay plan ID not configured for "${planId}". Set factoryConfig.plans[].domestic.razorpayPlanId after creating the plan in Razorpay dashboard.`
+    );
+
   const credentials = Buffer.from(`${keyId}:${keySecret}`).toString("base64");
 
   const res = await fetch("https://api.razorpay.com/v1/subscriptions", {
@@ -83,7 +89,7 @@ async function createRazorpayCheckout(
       Authorization: `Basic ${credentials}`,
     },
     body: JSON.stringify({
-      plan_id: planId,
+      plan_id: plan.domestic.razorpayPlanId,
       total_count: 12,
       quantity: 1,
       notes: { organization_id: organizationId },
@@ -101,7 +107,7 @@ async function createRazorpayCheckout(
     provider: "razorpay",
     subscriptionId: data.id,
     keyId,
-    amount: RAZORPAY_AMOUNTS[planId] ?? 0,
+    amount: plan.domestic.priceInr * 100, // display amount in paise
     currency: "INR",
     name: factoryConfig.product.name,
     email: userEmail,
@@ -158,6 +164,7 @@ export const PaymentRouter = {
   /**
    * Creates a checkout session with the appropriate gateway.
    * isDomestic=true → Razorpay (India); false → DoDo Payments (international).
+   * planId must match a factoryConfig.plans[].id value.
    */
   async createCheckoutSession(
     organizationId: string,

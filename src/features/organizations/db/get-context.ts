@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/src/lib/supabase/server";
 import { db } from "@/src/lib/db";
@@ -16,13 +17,15 @@ export type UserContext = {
 /**
  * Returns the authenticated user's active organization context.
  *
- * Call this at the top of any Server Component or Server Action that needs
- * the current user + org. It enforces three invariants:
+ * Wrapped in React.cache() — deduplicates calls within a single render pass so
+ * layout + page both calling this makes only one Supabase auth request + one DB query.
+ *
+ * Enforces three invariants:
  *   - Unauthenticated  → redirect /login
  *   - 0 organizations  → redirect /onboarding  (newly signed-up user)
  *   - ≥ 1 organization → return context
  */
-export async function getServerContext(): Promise<UserContext> {
+export const getServerContext = cache(async function (): Promise<UserContext> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -45,7 +48,6 @@ export async function getServerContext(): Promise<UserContext> {
     .limit(1);
 
   if (rows.length === 0) {
-    // Authenticated but not yet part of any org — send to onboarding
     redirect("/onboarding");
   }
 
@@ -58,4 +60,4 @@ export async function getServerContext(): Promise<UserContext> {
     organizationName,
     role,
   };
-}
+});

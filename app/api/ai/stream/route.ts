@@ -6,6 +6,7 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { z } from "zod";
+import factoryConfig from "@/src/config/factory.config";
 import type { NextRequest } from "next/server";
 
 export const runtime = "edge";
@@ -125,7 +126,7 @@ export async function POST(request: NextRequest): Promise<Response> {
   // ── Stream ─────────────────────────────────────────────────────────────────────
   const result = streamText({
     model,
-    system: "You are a helpful AI assistant built into BSF (Bharath Software Factory).",
+    system: `You are a helpful AI assistant built into ${factoryConfig.product.name}.`,
     messages: body.messages,
     onFinish: async ({ usage }) => {
       try {

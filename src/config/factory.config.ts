@@ -46,6 +46,32 @@ export interface BusinessModelConfig {
   aiUsageBillingEnabled: boolean;
 }
 
+// ─── Pricing Plans ────────────────────────────────────────────────────────────
+// Plans drive the billing UI, payment gateway calls, and webhook reconciliation.
+// Set dodoPlanId / razorpayPlanId after creating matching plans in each dashboard.
+
+export interface PlanConfig {
+  /** BSF-internal plan identifier used as form values and in logs */
+  id: string;
+  name: string;
+  description: string;
+  /** Highlight this plan as "most popular" in the pricing UI */
+  highlighted: boolean;
+  international: {
+    /** Display price in USD */
+    priceUsd: number;
+    /** DoDo Payments product_id — set after creating in DoDo dashboard */
+    dodoPlanId: string;
+  };
+  domestic: {
+    /** Display price in INR */
+    priceInr: number;
+    /** Razorpay plan_id — set after creating in Razorpay dashboard */
+    razorpayPlanId: string;
+  };
+  features: readonly string[];
+}
+
 // ─── Feature Module Toggles ───────────────────────────────────────────────────
 
 export interface ModulesConfig {
@@ -62,6 +88,7 @@ export interface ModulesConfig {
 export interface OpenGraphConfig {
   title: string;
   description: string;
+  /** Path to OG image — use "/opengraph-image" to serve the dynamic Next.js route */
   imageUrl: string;
 }
 
@@ -92,6 +119,7 @@ export interface FactoryConfig {
   product: ProductInfo;
   branding: BrandingConfig;
   businessModel: BusinessModelConfig;
+  plans: readonly PlanConfig[];
   modules: ModulesConfig;
   seo: SeoConfig;
   legal: LegalConfig;
@@ -99,6 +127,8 @@ export interface FactoryConfig {
 
 // ─── Singleton ────────────────────────────────────────────────────────────────
 // Modify this file to rebrand the entire product in under 10 seconds.
+// bsf-init.sh updates product.name, tagline, domain, supportEmail, seo fields,
+// and legal.companyName automatically when scaffolding a new product.
 
 const factoryConfig = {
   product: {
@@ -140,6 +170,50 @@ const factoryConfig = {
     aiUsageBillingEnabled: true,
   },
 
+  // ── Pricing plans ────────────────────────────────────────────────────────────
+  // After creating plans in DoDo and Razorpay dashboards, paste the IDs here.
+  // The billing UI, checkout actions, and webhook handlers all read from this array.
+  plans: [
+    {
+      id: "starter",
+      name: "Starter",
+      description: "Great for indie makers and small projects.",
+      highlighted: false,
+      international: { priceUsd: 9, dodoPlanId: "" },
+      domestic: { priceInr: 749, razorpayPlanId: "" },
+      features: ["Up to 3 team members", "10K AI tokens / month", "Email support"],
+    },
+    {
+      id: "pro",
+      name: "Pro",
+      description: "For growing teams that need more power.",
+      highlighted: true,
+      international: { priceUsd: 29, dodoPlanId: "" },
+      domestic: { priceInr: 2499, razorpayPlanId: "" },
+      features: [
+        "Up to 15 team members",
+        "100K AI tokens / month",
+        "Priority support",
+        "Custom domain",
+      ],
+    },
+    {
+      id: "enterprise",
+      name: "Enterprise",
+      description: "Unlimited scale with dedicated support.",
+      highlighted: false,
+      international: { priceUsd: 99, dodoPlanId: "" },
+      domestic: { priceInr: 8499, razorpayPlanId: "" },
+      features: [
+        "Unlimited team members",
+        "1M AI tokens / month",
+        "Dedicated support",
+        "SSO + SAML",
+        "Custom SLA",
+      ],
+    },
+  ],
+
   modules: {
     organizations: true,
     teamManagement: true,
@@ -156,7 +230,7 @@ const factoryConfig = {
     openGraph: {
       title: "Bharath Software Factory",
       description: "Ship SaaS products 10× faster with Claude Code and BSF.",
-      imageUrl: "/og-image.png",
+      imageUrl: "/opengraph-image",
     },
     sitemap: {
       changeFrequency: "weekly",

@@ -31,6 +31,16 @@ export const metadata: Metadata = {
   },
 };
 
+// Inject brand color tokens as CSS custom properties so Tailwind utilities
+// like bg-[var(--color-primary)] and arbitrary values work across all products.
+const brandingStyles = `
+  :root {
+    --color-primary: ${factoryConfig.branding.primary.value};
+    --color-accent: ${factoryConfig.branding.accent.value};
+    --color-neutral: ${factoryConfig.branding.neutral.value};
+  }
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -38,6 +48,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+      <head>
+        <style dangerouslySetInnerHTML={{ __html: brandingStyles }} />
+      </head>
       <body className="min-h-full flex flex-col">
         <AnalyticsProvider>{children}</AnalyticsProvider>
       </body>

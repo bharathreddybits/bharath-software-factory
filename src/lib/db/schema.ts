@@ -51,7 +51,6 @@ export const organizations = pgTable(
     id: uuid("id").primaryKey().defaultRandom().notNull(),
     name: text("name").notNull(),
     slug: text("slug").notNull(),
-    stripeCustomerId: text("stripe_customer_id"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   },
   (table) => [uniqueIndex("organizations_slug_idx").on(table.slug)]
