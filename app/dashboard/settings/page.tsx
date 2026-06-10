@@ -1,4 +1,4 @@
-import { getServerContext } from "@/src/features/organizations/db/get-context";
+import { getServerContext } from "@/src/features/organizations";
 
 export default async function SettingsPage() {
   const { organizationName } = await getServerContext();

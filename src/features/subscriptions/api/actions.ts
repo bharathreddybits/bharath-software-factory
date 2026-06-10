@@ -2,13 +2,10 @@
 
 import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
-import { createClient } from "@/src/lib/supabase/server";
-import {
-  PaymentRouter,
-  type RazorpayCheckoutResult,
-} from "@/src/features/subscriptions/api/router";
+import { getServerContext } from "@/src/features/organizations";
+import { PaymentRouter, type RazorpayCheckoutResult } from "./router";
 import { db } from "@/src/lib/db";
-import { memberships, subscriptions } from "@/src/lib/db/schema";
+import { subscriptions } from "@/src/lib/db/schema";
 
 // ── Action state types ─────────────────────────────────────────────────────────
 
@@ -16,6 +13,8 @@ export type CheckoutActionState =
   | null
   | { error: string }
   | (RazorpayCheckoutResult & { provider: "razorpay" });
+
+export type CancelActionState = null | { error: string } | { success: true };
 
 // ── createCheckoutAction ──────────────────────────────────────────────────────
 
@@ -28,27 +27,14 @@ export async function createCheckoutAction(
 
   if (!planId) return { error: "No plan selected." };
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const [membership] = await db
-    .select({ organizationId: memberships.organizationId })
-    .from(memberships)
-    .where(eq(memberships.profileId, user.id))
-    .limit(1);
-
-  if (!membership) redirect("/onboarding");
-
+  const { organizationId, email } = await getServerContext();
   const isDomestic = region === "domestic";
 
   try {
     const result = await PaymentRouter.createCheckoutSession(
-      membership.organizationId,
+      organizationId,
       planId,
-      user.email ?? "",
+      email,
       isDomestic
     );
 
@@ -66,8 +52,6 @@ export async function createCheckoutAction(
 
 // ── cancelSubscriptionAction ──────────────────────────────────────────────────
 
-export type CancelActionState = null | { error: string } | { success: true };
-
 export async function cancelSubscriptionAction(
   _prev: CancelActionState,
   formData: FormData
@@ -75,23 +59,10 @@ export async function cancelSubscriptionAction(
   const subscriptionId = formData.get("subscriptionId") as string | null;
   if (!subscriptionId) return { error: "Missing subscription ID." };
 
-  // Auth check
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const { organizationId, role } = await getServerContext();
 
-  // Role check — only owners and admins can cancel
-  const [membership] = await db
-    .select({ organizationId: memberships.organizationId, role: memberships.role })
-    .from(memberships)
-    .where(eq(memberships.profileId, user.id))
-    .limit(1);
-
-  if (!membership) redirect("/onboarding");
-
-  if (membership.role === "member") {
+  // Role gate — only owners and admins can cancel
+  if (role === "member") {
     return { error: "Only owners and admins can cancel subscriptions." };
   }
 
@@ -99,7 +70,7 @@ export async function cancelSubscriptionAction(
   const sub = await db.query.subscriptions.findFirst({
     where: and(
       eq(subscriptions.id, subscriptionId),
-      eq(subscriptions.organizationId, membership.organizationId)
+      eq(subscriptions.organizationId, organizationId)
     ),
   });
 

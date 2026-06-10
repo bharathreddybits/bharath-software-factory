@@ -34,10 +34,10 @@ export function AiChatClient() {
       });
 
       if (!response.ok || !response.body) {
-        const text = await response.text().catch(() => "Stream failed.");
+        const errorText = await response.text().catch(() => "Stream failed.");
         setMessages((prev) => [
           ...prev.slice(0, -1),
-          { role: "assistant", content: `Error: ${text}` },
+          { role: "assistant", content: `Error: ${errorText}` },
         ]);
         return;
       }
@@ -84,7 +84,6 @@ export function AiChatClient() {
         </p>
       </div>
 
-      {/* Message thread */}
       <Card className="mb-4 flex-1 overflow-y-auto bg-zinc-900 border-zinc-800">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium text-zinc-400">Conversation</CardTitle>
@@ -119,7 +118,6 @@ export function AiChatClient() {
         </CardContent>
       </Card>
 
-      {/* Input form */}
       <form onSubmit={sendMessage} className="flex gap-2">
         <input
           type="text"

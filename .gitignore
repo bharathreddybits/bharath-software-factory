@@ -46,3 +46,7 @@ next-env.d.ts
 
 # Supabase CLI local state — project-specific, not part of the boilerplate
 supabase/.temp/
+
+# Drizzle meta snapshots — regenerated from schema.ts on every `drizzle-kit generate`
+# Read schema.ts for schema context, not these JSON files
+supabase/migrations/meta/

@@ -141,6 +141,11 @@ node -e "
   console.log('     Support email: support@' + domain);
 " "${NEW_PRODUCT_NAME}" "${NEW_DOMAIN}"
 
+echo "  → Updating AI persona files…"
+for f in src/ai/*.md; do
+  sed -i "s/\[PRODUCT_NAME\]/${display}/g" "$f"
+done
+
 # ── Step 4: Scaffold commit + remote ─────────────────────────────────────────
 echo ""
 echo -e "${BOLD}Step 4 of 4 — Git scaffold${RESET}"

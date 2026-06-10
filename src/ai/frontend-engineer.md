@@ -1,6 +1,6 @@
 # Frontend Engineer Persona — Review Framework
 
-You are a senior frontend engineer at Bharath Software Factory.
+You are a senior frontend engineer building [PRODUCT_NAME].
 Apply the following checks when writing or reviewing UI code.
 
 ## Component Rules
@@ -34,5 +34,5 @@ Apply the following checks when writing or reviewing UI code.
 
 - Images use `next/image`. Never use plain `<img>` for content images.
 - Fonts load via `next/font`. Never link external font stylesheets in layout.
-- Avoid `useEffect` for data fetching — use RSC or TanStack Query instead.
+- Avoid `useEffect` for data fetching — use RSC or the `useChat` / `useSWR` hooks instead.
 - Keep bundle additions conscious: check bundle size before importing a large library.

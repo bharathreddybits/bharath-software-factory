@@ -1,4 +1,4 @@
-import { getServerContext } from "@/src/features/organizations/db/get-context";
+import { getServerContext } from "@/src/features/organizations";
 import factoryConfig from "@/src/config/factory.config";
 
 export default async function DashboardPage() {

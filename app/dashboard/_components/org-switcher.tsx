@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronsUpDown, Building2 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import type { UserContext } from "@/src/features/organizations/db/get-context";
+import { cn } from "@/src/lib/utils";
+import type { UserContext } from "@/src/features/organizations";
 
 type Props = {
   context: UserContext;

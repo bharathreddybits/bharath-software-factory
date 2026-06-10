@@ -127,6 +127,21 @@ from `getServerContext()` — never from client input.
 
 ---
 
+## Component Placement
+
+Three locations exist — choose by ownership:
+
+| Location | What goes here |
+|---|---|
+| `components/ui/` | ShadCN primitives only — add via `npx shadcn@latest add <name>` |
+| `app/dashboard/_components/` | Layout chrome only: Sidebar, NavLinks, header bars |
+| `src/features/<name>/ui/` | Everything else — all product feature UI |
+
+Never put business logic or feature components directly in `app/` pages. Pages are thin shells
+that call `getServerContext()`, apply module guards, and render feature UI components.
+
+---
+
 ## UI Components
 
 ShadCN base-nova variant. **`asChild` prop does NOT exist on Button** — this variant uses
@@ -165,6 +180,8 @@ OAuth and email confirmation require `/auth/callback` — it exists at
 ## AI Module
 
 The streaming edge route is `app/api/ai/stream/route.ts`.
+The client uses manual fetch + ReadableStream (SDK v6 ships React hooks in a separate package;
+to use `useChat`, install `@ai-sdk/react` and switch the route to `toDataStreamResponse()`).
 - System prompt reads from `factoryConfig.product.name` — do not hardcode.
 - Rate limiting via Upstash Redis — no-ops if `UPSTASH_REDIS_REST_URL` is unset (safe for local dev).
 - Usage is logged to the `ai_usage` table in `onFinish` — never crashes the active stream.

@@ -1,4 +1,4 @@
-import { getServerContext } from "@/src/features/organizations/db/get-context";
+import { getServerContext } from "@/src/features/organizations";
 import { Sidebar } from "./_components/sidebar";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {

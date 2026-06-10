@@ -10,7 +10,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { createCheckoutAction, cancelSubscriptionAction } from "./actions";
+import { createCheckoutAction, cancelSubscriptionAction } from "@/src/features/subscriptions";
 import factoryConfig from "@/src/config/factory.config";
 import type { Subscription } from "@/src/lib/db/schema";
 

@@ -12,8 +12,11 @@ import type { NextRequest } from "next/server";
 export const runtime = "edge";
 
 // ── Model registry ─────────────────────────────────────────────────────────────
+// Pricing source: https://www.anthropic.com/pricing  |  https://openai.com/pricing
+// Update when new models ship or prices change (check monthly).
 
 const COST_PER_TOKEN: Record<string, { input: number; output: number }> = {
+  "claude-sonnet-4-6": { input: 0.000003, output: 0.000015 },
   "claude-haiku-4-5-20251001": { input: 0.0000008, output: 0.000004 },
   "claude-3-5-haiku-20241022": { input: 0.0000008, output: 0.000004 },
   "gpt-4o-mini": { input: 0.00000015, output: 0.0000006 },

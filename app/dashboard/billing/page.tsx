@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import factoryConfig from "@/src/config/factory.config";
-import { getServerContext } from "@/src/features/organizations/db/get-context";
+import { getServerContext } from "@/src/features/organizations";
 import { db } from "@/src/lib/db";
 import { subscriptions } from "@/src/lib/db/schema";
 import { eq } from "drizzle-orm";
