@@ -53,7 +53,7 @@ export async function getServerContext(): Promise<UserContext> {
 
   return {
     userId: user.id,
-    email: user.email!,
+    email: user.email ?? "",
     organizationId,
     organizationName,
     role,

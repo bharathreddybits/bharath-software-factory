@@ -17,6 +17,18 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: factoryConfig.seo.metaTitle,
   description: factoryConfig.seo.metaDescription,
+  openGraph: {
+    title: factoryConfig.seo.openGraph.title,
+    description: factoryConfig.seo.openGraph.description,
+    images: [{ url: factoryConfig.seo.openGraph.imageUrl }],
+    siteName: factoryConfig.product.name,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: factoryConfig.seo.openGraph.title,
+    description: factoryConfig.seo.openGraph.description,
+    images: [factoryConfig.seo.openGraph.imageUrl],
+  },
 };
 
 export default function RootLayout({

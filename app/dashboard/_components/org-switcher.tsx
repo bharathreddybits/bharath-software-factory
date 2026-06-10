@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { ChevronsUpDown, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { UserContext } from "@/src/features/organizations/db/get-context";
@@ -11,6 +12,7 @@ type Props = {
 
 export function OrgSwitcher({ context }: Props) {
   const [open, setOpen] = useState(false);
+  const router = useRouter();
 
   return (
     <div className="relative">
@@ -32,7 +34,6 @@ export function OrgSwitcher({ context }: Props) {
         <ChevronsUpDown className="size-3.5 shrink-0 text-zinc-500" />
       </button>
 
-      {/* Dropdown — org list will be wired in Phase 5 */}
       {open && (
         <div className="absolute left-0 top-full z-50 mt-1 w-full min-w-48 rounded-lg border border-zinc-700 bg-zinc-900 p-1 shadow-xl">
           {/* Current org (active) */}
@@ -47,7 +48,10 @@ export function OrgSwitcher({ context }: Props) {
           <button
             type="button"
             className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
-            onClick={() => setOpen(false)}
+            onClick={() => {
+              setOpen(false);
+              router.push("/onboarding");
+            }}
           >
             + Create organization
           </button>

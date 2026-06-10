@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import factoryConfig from "@/src/config/factory.config";
 
 // ── Lazy singleton ─────────────────────────────────────────────────────────────
 
@@ -34,12 +35,12 @@ export function baseEmailTemplate(bodyHtml: string): string {
 <body>
   <div class="wrapper">
     <div class="header">
-      <p class="header-title">Bharath Software Factory</p>
+      <p class="header-title">${factoryConfig.product.name}</p>
     </div>
     <div class="body">${bodyHtml}</div>
     <div class="footer">
-      You're receiving this because you have an account with BSF.
-      &copy; ${new Date().getFullYear()} Bharath Software Factory.
+      You're receiving this because you have an account with ${factoryConfig.product.name}.
+      &copy; ${new Date().getFullYear()} ${factoryConfig.legal.companyName}.
     </div>
   </div>
 </body>
@@ -54,7 +55,9 @@ type SendOptions = {
   html: string;
 };
 
-const FROM_ADDRESS = process.env.RESEND_FROM_ADDRESS ?? "BSF <noreply@bharathsoftwarefactory.com>";
+const FROM_ADDRESS =
+  process.env.RESEND_FROM_ADDRESS ??
+  `${factoryConfig.product.name} <noreply@${factoryConfig.product.domain}>`;
 
 export async function sendTransactionalEmail({ to, subject, html }: SendOptions): Promise<void> {
   const { error } = await getResend().emails.send({

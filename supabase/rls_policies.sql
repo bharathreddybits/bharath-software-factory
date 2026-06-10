@@ -42,6 +42,7 @@ ALTER TABLE profiles         ENABLE ROW LEVEL SECURITY;
 ALTER TABLE organizations    ENABLE ROW LEVEL SECURITY;
 ALTER TABLE memberships      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ai_usage         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE subscriptions    ENABLE ROW LEVEL SECURITY;
 
 -- ── Step 2: Helper function — membership check ───────────────────────────────
 -- Encapsulates the "is the current user a member of this org?" check so all
@@ -225,3 +226,16 @@ CREATE POLICY "ai_usage: insert members"
     is_member_of(organization_id)
     AND auth.uid() = user_id
   );
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- TABLE: subscriptions
+--
+-- Written exclusively by webhook handlers via service_role (bypasses RLS).
+-- Members can read their org's subscription for billing transparency.
+-- No INSERT/UPDATE/DELETE from client-side.
+-- ─────────────────────────────────────────────────────────────────────────────
+
+CREATE POLICY "subscriptions: select members"
+  ON subscriptions
+  FOR SELECT
+  USING (is_member_of(organization_id));

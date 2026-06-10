@@ -96,6 +96,18 @@ node -e "
   fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
 " "${NEW_PRODUCT_NAME}"
 
+echo "  → Updating factory.config.ts product name…"
+node -e "
+  const fs = require('fs');
+  const kebab = process.argv[1];
+  const display = kebab.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  let content = fs.readFileSync('src/config/factory.config.ts', 'utf8');
+  content = content.replace(/name: \"Bharath Software Factory\"/g, 'name: \"' + display + '\"');
+  content = content.replace(/companyName: \"Bharath Software Factory\"/g, 'companyName: \"' + display + '\"');
+  fs.writeFileSync('src/config/factory.config.ts', content);
+  console.log('     Display name: ' + display);
+" "${NEW_PRODUCT_NAME}"
+
 # ── Stage all files and make initial commit ───────────────────────────────────
 echo "  → Staging all project files…"
 git add .

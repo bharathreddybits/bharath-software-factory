@@ -1,6 +1,7 @@
 import { db } from "@/src/lib/db";
 import { subscriptions } from "@/src/lib/db/schema";
 import { eq } from "drizzle-orm";
+import factoryConfig from "@/src/config/factory.config";
 
 // ── Return types ───────────────────────────────────────────────────────────────
 
@@ -102,7 +103,7 @@ async function createRazorpayCheckout(
     keyId,
     amount: RAZORPAY_AMOUNTS[planId] ?? 0,
     currency: "INR",
-    name: "Bharath Software Factory",
+    name: factoryConfig.product.name,
     email: userEmail,
   };
 }

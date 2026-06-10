@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import factoryConfig from "@/src/config/factory.config";
 
 export const metadata: Metadata = {
-  title: `Sign in — ${factoryConfig.product.name}`,
+  title: {
+    template: `%s — ${factoryConfig.product.name}`,
+    default: factoryConfig.product.name,
+  },
 };
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
