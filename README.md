@@ -8,27 +8,35 @@ BSF is a production-ready SaaS boilerplate and **Product Factory Platform** — 
 
 ## Quick Start (< 4 hours to a working product)
 
-### 1. Fork and clone
+### 1. Clone and initialize
 
 ```bash
 git clone https://github.com/bharathreddybits/bharath-software-factory.git my-product
 cd my-product
 npm install
+chmod +x bsf-init.sh && ./bsf-init.sh
 ```
 
-### 2. Copy environment variables
+`bsf-init.sh` will:
+- Prompt for your new product name (kebab-case) and GitHub remote URL
+- Wipe the BSF git history and create a fresh repository
+- Rename `package.json` name field
+- Bootstrap `.env.local` from `.env.example`
+- Print step-by-step deployment instructions
 
-```bash
-cp .env.example .env.local
-```
+### 2. Fill in environment variables
 
-Fill in every value in `.env.local`. See the comments in `.env.example` for where to find each key.
+Open `.env.local` and populate every value. See `.env.example` for where to find each key — Supabase, Anthropic, Resend, PostHog, Sentry, and payment gateway credentials are all documented there.
 
 ### 3. Set up Supabase
 
 1. Create a new project at [supabase.com](https://supabase.com).
-2. Copy your Project URL and anon key into `.env.local`.
-3. Run the schema migrations (Phase 2 — coming soon).
+2. Copy your Project URL, anon key, and service role key into `.env.local`.
+3. Apply migrations in order via the Supabase SQL Editor:
+   - `supabase/migrations/0000_certain_killer_shrike.sql`
+   - `supabase/migrations/0001_loving_moondragon.sql`
+   - `supabase/migrations/0002_add_subscriptions.sql`
+   - `supabase/rls_policies.sql`
 
 ### 4. Rebrand in 10 seconds
 
@@ -59,7 +67,7 @@ Visit [http://localhost:3000](http://localhost:3000).
 npx vercel --prod
 ```
 
-Set your environment variables in the Vercel dashboard (copy from `.env.example`).
+Set all environment variables from `.env.local` in the Vercel dashboard before deploying.
 
 ---
 
@@ -68,13 +76,13 @@ Set your environment variables in the Vercel dashboard (copy from `.env.example`
 | Layer | Technology |
 |---|---|
 | Frontend | Next.js 16 (App Router), TypeScript, Tailwind CSS v4, ShadCN UI |
-| Database | PostgreSQL via Supabase |
-| Auth | Supabase Auth (Magic Link + OAuth) |
-| Payments | DoDo Payments (US) + Razorpay (India) with abstraction layer |
+| Database | PostgreSQL via Supabase + Drizzle ORM |
+| Auth | Supabase Auth (Email/Password + OAuth) |
+| Payments | DoDo Payments (international) + Razorpay (India) with abstraction layer |
 | Email | Resend |
 | Analytics | PostHog |
 | Error Tracking | Sentry |
-| AI | Anthropic Claude + OpenAI |
+| AI | Anthropic Claude + OpenAI via Vercel AI SDK |
 | Hosting | Vercel |
 
 ---
@@ -84,32 +92,30 @@ Set your environment variables in the Vercel dashboard (copy from `.env.example`
 ```
 bsf-boilerplate/
 ├── app/                        # Next.js App Router (routes, layouts, pages)
+│   ├── (auth)/                 # Login + signup pages
+│   ├── api/                    # Route Handlers (AI stream, billing webhooks)
+│   ├── dashboard/              # Protected dashboard + feature pages
+│   └── onboarding/             # Post-signup org creation flow
 ├── components/
 │   └── ui/                     # ShadCN UI primitives
-├── lib/                        # Shared utilities (lib/utils.ts, etc.)
 ├── src/
 │   ├── config/
 │   │   └── factory.config.ts   # Master config — rebrand here
 │   ├── features/               # Feature modules (self-contained)
-│   │   ├── subscriptions/
-│   │   │   ├── ui/             # React components for this feature
-│   │   │   ├── api/            # Server Actions + Route Handlers
-│   │   │   ├── db/             # Supabase queries
-│   │   │   ├── events/         # Analytics event helpers
-│   │   │   ├── tests/          # Vitest + Playwright specs
-│   │   │   └── docs/           # Feature-level documentation
-│   │   └── organizations/      # (same structure)
+│   │   ├── subscriptions/      # Payments + billing
+│   │   └── organizations/      # Multi-tenancy context
+│   ├── lib/
+│   │   ├── analytics/          # PostHog (server + client provider)
+│   │   ├── db/                 # Drizzle schema + client
+│   │   ├── email/              # Resend transactional email
+│   │   └── supabase/           # Auth + admin clients
 │   └── ai/                     # AI persona prompts
-│       ├── staff-engineer.md
-│       ├── product-manager.md
-│       ├── frontend-engineer.md
-│       ├── backend-engineer.md
-│       ├── designer.md
-│       ├── qa-engineer.md
-│       ├── security-engineer.md
-│       └── growth-marketer.md
-├── public/                     # Static assets
+├── supabase/
+│   ├── migrations/             # Drizzle-generated SQL migrations
+│   └── rls_policies.sql        # Row Level Security policies
 ├── .env.example                # Environment variable template
+├── bsf-init.sh                 # One-click product scaffold script
+├── sentry.*.config.ts          # Sentry configs (client/server/edge)
 └── components.json             # ShadCN configuration
 ```
 
@@ -121,10 +127,10 @@ bsf-boilerplate/
 |---|---|---|
 | **1 — Core Foundation** | Next.js + TypeScript + Tailwind + ShadCN + Config layer | ✅ Done |
 | **2 — Database** | Supabase schema, RLS, tenant isolation | ✅ Done |
-| **3 — Auth & UI** | Supabase Auth, middleware, dashboard layout, landing page | 🔜 Next |
-| **4 — Payments** | DoDo + Razorpay abstraction layer, webhooks | 🔜 Planned |
-| **5 — Add-ons** | Resend email, PostHog analytics, AI streaming routes | 🔜 Planned |
-| **6 — Monitoring** | Sentry, Vercel deployment configuration | 🔜 Planned |
+| **3 — Auth & UI** | Supabase Auth, middleware, dashboard layout, landing page | ✅ Done |
+| **4 — Payments** | DoDo + Razorpay abstraction layer, webhooks | ✅ Done |
+| **5 — Add-ons** | Resend email, PostHog analytics, AI streaming routes | ✅ Done |
+| **6 — Monitoring** | Sentry, Vercel deployment configuration | ✅ Done |
 
 ---
 
