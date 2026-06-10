@@ -121,19 +121,6 @@ bsf-boilerplate/
 
 ---
 
-## The 6-Phase Assembly Line
-
-| Phase | Goal | Status |
-|---|---|---|
-| **1 — Core Foundation** | Next.js + TypeScript + Tailwind + ShadCN + Config layer | ✅ Done |
-| **2 — Database** | Supabase schema, RLS, tenant isolation | ✅ Done |
-| **3 — Auth & UI** | Supabase Auth, middleware, dashboard layout, landing page | ✅ Done |
-| **4 — Payments** | DoDo + Razorpay abstraction layer, webhooks | ✅ Done |
-| **5 — Add-ons** | Resend email, PostHog analytics, AI streaming routes | ✅ Done |
-| **6 — Monitoring** | Sentry, Vercel deployment configuration | ✅ Done |
-
----
-
 ## Adding a New Feature Module
 
 ```bash
@@ -170,7 +157,7 @@ Architecture rules:
 - Analytics events go in src/features/<feature-name>/events/
 
 Tech stack: Next.js 16 App Router, TypeScript strict, Tailwind CSS v4, ShadCN (base-nova style),
-Supabase, Zod for validation, TanStack Query for client-side data.
+Supabase, Zod for validation.
 
 Read src/ai/staff-engineer.md before writing any code.
 

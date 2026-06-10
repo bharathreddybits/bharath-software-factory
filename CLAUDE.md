@@ -29,6 +29,39 @@ The Supabase `anon` key respects RLS policies in `supabase/rls_policies.sql`.
 The `SUPABASE_SERVICE_ROLE_KEY` bypasses RLS — use it only in Route Handlers and webhooks,
 never in Client Components or Server Components that render user-facing data.
 
+## Immutable Architecture Decisions
+
+The following decisions are settled and must not be reconsidered unless explicitly requested.
+
+### Multi-Tenancy
+Every user belongs to an organization.
+Every user automatically receives a personal organization.
+All user-owned data belongs to an organization.
+Never create tables owned directly by user_id unless explicitly approved.
+
+### Product Configuration
+factory.config.ts is the single source of truth.
+Never introduce secondary configuration systems.
+Never duplicate configuration values elsewhere.
+
+### Feature Architecture
+Every feature follows:
+ui/
+api/
+db/
+events/
+docs/
+tests/
+
+No exceptions.
+
+### Payment Architecture
+Business logic must never know whether DoDo or Razorpay is active.
+All payment interactions flow through PaymentRouter.
+
+### AI Architecture
+AI providers are implementation details.
+Features interact with AI abstractions, not directly with Anthropic or OpenAI SDKs.
 ---
 
 ## Adding a New Page
@@ -43,7 +76,7 @@ never in Client Components or Server Components that render user-facing data.
 Example skeleton:
 ```tsx
 import { redirect } from "next/navigation";
-import { getServerContext } from "@/src/features/organizations/db/get-context";
+import { getServerContext } from "@/src/features/organizations";
 import factoryConfig from "@/src/config/factory.config";
 
 export default async function MyPage() {
@@ -106,6 +139,43 @@ communication goes through the public `index.ts` barrel.
 Do NOT put business logic in `app/`. Pages are thin — they call `getServerContext()`,
 pass context to feature UI components, and handle module guards.
 
+---
+
+## Event Architecture
+
+All significant actions emit standardized events.
+
+Examples:
+
+user_signed_up
+organization_created
+subscription_started
+subscription_cancelled
+ai_request_sent
+ai_response_completed
+feature_used
+
+Analytics systems consume events.
+
+Features should not create ad-hoc event names.
+
+---
+
+## Product Factory Rule
+
+Before introducing any new dependency, architecture pattern, abstraction, or package:
+
+Ask:
+
+"Will this help at least 3 future products?"
+
+If not:
+
+Do not introduce it.
+
+BSF is a factory, not a single application.
+
+Optimize for reuse.
 ---
 
 ## Payment System
@@ -183,6 +253,33 @@ OAuth and email confirmation require `/auth/callback` — it exists at
 
 ---
 
+## AI Context Optimization Rules
+
+Optimize for Claude Code.
+
+Prefer:
+
+- Small files
+- Explicit names
+- Predictable locations
+
+Avoid:
+
+- Deep inheritance
+- Dynamic magic
+- Hidden side effects
+- Massive utility files
+
+Target:
+
+- Files <300 lines preferred
+- Components <200 lines preferred
+- Split large files when readability improves
+
+If a file exceeds limits, propose refactoring.
+
+---
+
 ## AI Module
 
 The streaming edge route is `app/api/ai/stream/route.ts`.
@@ -220,6 +317,53 @@ Key vars:
 - `ANTHROPIC_API_KEY` — Claude API. Required for AI chat.
 - `DODO_PAYMENTS_API_KEY` / `DODO_PAYMENTS_WEBHOOK_SECRET` — DoDo (international payments).
 - `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` / `RAZORPAY_WEBHOOK_SECRET` — Razorpay (India).
+
+---
+
+## Repository Quality Gates
+A feature is not complete unless all gates pass.
+
+### Security Gate
+- Tenant isolation preserved
+- Ownership checks present
+- No service role usage in UI paths
+
+### Documentation Gate
+Feature contains:
+docs/README.md
+
+### Testing Gate
+Feature contains:
+tests/
+
+### AI Agent Gate
+A new AI agent must understand the feature within 5 minutes.
+Public API documented.
+
+### Configuration Gate
+No hardcoded:
+- URLs
+- Domains
+- Prices
+- Product names
+
+---
+
+## Build vs Reuse Rule
+
+Before creating:
+
+- utility
+- hook
+- abstraction
+- package
+- helper
+
+Search existing codebase first.
+
+Prefer reuse over creation.
+
+New abstractions require a demonstrated second use case.
 
 ---
 
