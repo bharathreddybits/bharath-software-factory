@@ -1,6 +1,9 @@
+import { redirect } from "next/navigation";
+import factoryConfig from "@/src/config/factory.config";
 import { getServerContext } from "@/src/features/organizations/db/get-context";
 
 export default async function TeamPage() {
+  if (!factoryConfig.modules.teamManagement) redirect("/dashboard");
   const { organizationName } = await getServerContext();
 
   return (

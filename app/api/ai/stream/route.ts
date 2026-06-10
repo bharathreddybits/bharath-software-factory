@@ -3,6 +3,9 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { streamText } from "ai";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createOpenAI } from "@ai-sdk/openai";
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
+import { z } from "zod";
 import type { NextRequest } from "next/server";
 
 export const runtime = "edge";
@@ -26,10 +29,12 @@ function getModel(modelId: string) {
   return { model: createAnthropic({ apiKey: anthropicKey })(modelId), provider: "anthropic" };
 }
 
-// ── Request body type ─────────────────────────────────────────────────────────
+// ── Request body schema ───────────────────────────────────────────────────────
 
-type MessageParam = { role: "user" | "assistant"; content: string };
-type RequestBody = { messages: MessageParam[]; model?: string };
+const BodySchema = z.object({
+  messages: z.array(z.object({ role: z.enum(["user", "assistant"]), content: z.string() })).min(1),
+  model: z.string().optional(),
+});
 
 // ── Route handler ─────────────────────────────────────────────────────────────
 
@@ -62,6 +67,20 @@ export async function POST(request: NextRequest): Promise<Response> {
     return new Response("Unauthorized", { status: 401 });
   }
 
+  // ── Rate limiting — 20 requests / user / minute ───────────────────────────────
+  const rateLimitUrl = process.env.UPSTASH_REDIS_REST_URL;
+  const rateLimitToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (rateLimitUrl && rateLimitToken) {
+    const ratelimit = new Ratelimit({
+      redis: new Redis({ url: rateLimitUrl, token: rateLimitToken }),
+      limiter: Ratelimit.slidingWindow(20, "1 m"),
+    });
+    const { success } = await ratelimit.limit(user.id);
+    if (!success) {
+      return new Response("Too many requests. Try again shortly.", { status: 429 });
+    }
+  }
+
   // ── Org context: query via Supabase REST (edge-safe, no postgres.js) ─────────
   const admin = createSupabaseClient(supabaseUrl, supabaseServiceKey, {
     auth: { autoRefreshToken: false, persistSession: false },
@@ -81,16 +100,12 @@ export async function POST(request: NextRequest): Promise<Response> {
 
   const organizationId = membership.organization_id as string;
 
-  // ── Parse request body ────────────────────────────────────────────────────────
-  let body: RequestBody;
+  // ── Parse + validate request body ────────────────────────────────────────────
+  let body: z.infer<typeof BodySchema>;
   try {
-    body = (await request.json()) as RequestBody;
+    body = BodySchema.parse(await request.json());
   } catch {
-    return new Response("Invalid JSON body.", { status: 400 });
-  }
-
-  if (!Array.isArray(body.messages) || body.messages.length === 0) {
-    return new Response("messages array is required.", { status: 400 });
+    return new Response("Invalid request body.", { status: 400 });
   }
 
   const modelId = body.model ?? "claude-haiku-4-5-20251001";
