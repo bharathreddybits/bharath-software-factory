@@ -12,12 +12,7 @@ import {
 import { relations } from "drizzle-orm";
 
 // ── External schema stub — Supabase auth ──────────────────────────────────────
-// Declaring auth.users here tells Drizzle it lives in the "auth" schema managed
-// by Supabase. Drizzle will emit the correct qualified FK reference in migrations
-// and will never attempt to CREATE or DROP this table.
-
 const authSchema = pgSchema("auth");
-
 const authUsers = authSchema.table("users", {
   id: uuid("id").primaryKey().notNull(),
 });
@@ -25,6 +20,16 @@ const authUsers = authSchema.table("users", {
 // ── Enums ─────────────────────────────────────────────────────────────────────
 
 export const membershipRoleEnum = pgEnum("membership_role", ["owner", "admin", "member"]);
+
+export const gatewayProviderEnum = pgEnum("gateway_provider", ["dodo", "razorpay"]);
+
+export const subscriptionStatusEnum = pgEnum("subscription_status", [
+  "active",
+  "trialing",
+  "past_due",
+  "canceled",
+  "unpaid",
+]);
 
 // ── Tables ────────────────────────────────────────────────────────────────────
 
@@ -83,6 +88,25 @@ export const aiUsage = pgTable("ai_usage", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
+// Active subscription per organization — one row per org, upserted by webhooks
+export const subscriptions = pgTable(
+  "subscriptions",
+  {
+    id: uuid("id").primaryKey().defaultRandom().notNull(),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    gatewayProvider: gatewayProviderEnum("gateway_provider").notNull(),
+    gatewaySubscriptionId: text("gateway_subscription_id").notNull().unique(),
+    gatewayCustomerId: text("gateway_customer_id").notNull(),
+    status: subscriptionStatusEnum("status").notNull().default("trialing"),
+    planId: text("plan_id").notNull(),
+    currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => [uniqueIndex("subscriptions_org_idx").on(table.organizationId)]
+);
+
 // ── Relations ─────────────────────────────────────────────────────────────────
 
 export const profilesRelations = relations(profiles, ({ many }) => ({
@@ -90,9 +114,13 @@ export const profilesRelations = relations(profiles, ({ many }) => ({
   aiUsage: many(aiUsage),
 }));
 
-export const organizationsRelations = relations(organizations, ({ many }) => ({
+export const organizationsRelations = relations(organizations, ({ many, one }) => ({
   memberships: many(memberships),
   aiUsage: many(aiUsage),
+  subscription: one(subscriptions, {
+    fields: [organizations.id],
+    references: [subscriptions.organizationId],
+  }),
 }));
 
 export const membershipsRelations = relations(memberships, ({ one }) => ({
@@ -117,6 +145,13 @@ export const aiUsageRelations = relations(aiUsage, ({ one }) => ({
   }),
 }));
 
+export const subscriptionsRelations = relations(subscriptions, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [subscriptions.organizationId],
+    references: [organizations.id],
+  }),
+}));
+
 // ── Inferred Types ────────────────────────────────────────────────────────────
 
 export type Profile = typeof profiles.$inferSelect;
@@ -131,3 +166,8 @@ export type MembershipRole = (typeof membershipRoleEnum.enumValues)[number];
 
 export type AiUsage = typeof aiUsage.$inferSelect;
 export type NewAiUsage = typeof aiUsage.$inferInsert;
+
+export type Subscription = typeof subscriptions.$inferSelect;
+export type NewSubscription = typeof subscriptions.$inferInsert;
+export type GatewayProvider = (typeof gatewayProviderEnum.enumValues)[number];
+export type SubscriptionStatus = (typeof subscriptionStatusEnum.enumValues)[number];

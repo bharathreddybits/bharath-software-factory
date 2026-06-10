@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LayoutDashboard, Settings, Users, Cpu } from "lucide-react";
+import { LayoutDashboard, Settings, Users, Cpu, CreditCard } from "lucide-react";
 import { OrgSwitcher } from "./org-switcher";
 import factoryConfig from "@/src/config/factory.config";
 import type { UserContext } from "@/src/features/organizations/db/get-context";
@@ -54,11 +54,22 @@ export function Sidebar({ context }: Props) {
         {/* AI features — only when module is enabled */}
         {factoryConfig.modules.aiFeatures && (
           <Link
-            href="/dashboard/ai"
+            href="/dashboard/ai-chat"
             className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
           >
             <Cpu className="size-4" />
-            AI
+            AI Chat
+          </Link>
+        )}
+
+        {/* Billing — only when subscription module is enabled */}
+        {factoryConfig.businessModel.subscriptionEnabled && (
+          <Link
+            href="/dashboard/billing"
+            className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm text-zinc-400 hover:bg-zinc-800 hover:text-white transition-colors"
+          >
+            <CreditCard className="size-4" />
+            Billing
           </Link>
         )}
       </nav>

@@ -15,6 +15,13 @@
       "when": 1781014049515,
       "tag": "0001_loving_moondragon",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1781017698059,
+      "tag": "0002_add_subscriptions",
+      "breakpoints": true
     }
   ]
 }

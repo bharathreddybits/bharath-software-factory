@@ -36,7 +36,7 @@ export async function createOrganizationAction(
   _prevState: OnboardingActionState,
   formData: FormData
 ): Promise<OnboardingActionState> {
-  const name = (formData.get("name") as string).trim();
+  const name = ((formData.get("name") as string | null) ?? "").trim();
   if (!name || name.length < 2) {
     return { error: "Organization name must be at least 2 characters." };
   }
