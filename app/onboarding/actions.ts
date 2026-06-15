@@ -60,14 +60,21 @@ export async function createOrganizationAction(
   // Ensure a profiles row exists for this user (idempotent upsert)
   await db.insert(profiles).values({ id: user.id }).onConflictDoNothing();
 
-  const [org] = await db
-    .insert(organizations)
-    .values({ name, slug })
-    .returning({ id: organizations.id });
+  let orgId: string;
+  try {
+    const [org] = await db
+      .insert(organizations)
+      .values({ name, slug })
+      .returning({ id: organizations.id });
+    orgId = org.id;
+  } catch {
+    // Unique constraint on slug — extremely rare race between concurrent signups
+    return { error: "Could not create workspace. Please try again." };
+  }
 
   await db.insert(memberships).values({
     profileId: user.id,
-    organizationId: org.id,
+    organizationId: orgId,
     role: "owner",
   });
 

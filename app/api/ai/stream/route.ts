@@ -114,6 +114,10 @@ export async function POST(request: NextRequest): Promise<Response> {
 
   const modelId = body.model ?? "claude-haiku-4-5-20251001";
 
+  if (!Object.hasOwn(COST_PER_TOKEN, modelId)) {
+    return new Response("Requested model is not available.", { status: 400 });
+  }
+
   let modelSetup: ReturnType<typeof getModel>;
   try {
     modelSetup = getModel(modelId);
